@@ -1,0 +1,207 @@
+@import "tailwindcss";
+
+:root {
+  --sn-red: #e50914;
+  --sn-red-dark: #b20710;
+  --sn-gold: #f5c518;
+  --sn-bg: #0a0a0f;
+  --sn-surface: #141419;
+  --sn-card: #1a1a24;
+  --sn-border: #2a2a3a;
+  --sn-text: #e5e5e5;
+  --sn-muted: #8c8c9a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--sn-bg);
+  color: var(--sn-text);
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--sn-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: #3a3a4a;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--sn-red);
+}
+
+/* Card hover */
+.card-hover {
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    box-shadow 0.3s ease, z-index 0s;
+}
+.card-hover:hover {
+  transform: scale(1.05);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  z-index: 10;
+}
+
+/* Skeleton loading animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--sn-card) 25%,
+    #22222e 50%,
+    var(--sn-card) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Hero gradient */
+.hero-gradient {
+  background: linear-gradient(
+    to right,
+    rgba(10, 10, 15, 0.95) 0%,
+    rgba(10, 10, 15, 0.7) 50%,
+    rgba(10, 10, 15, 0.2) 100%
+  );
+}
+
+.hero-bottom-gradient {
+  background: linear-gradient(
+    to top,
+    rgba(10, 10, 15, 1) 0%,
+    rgba(10, 10, 15, 0.5) 50%,
+    transparent 100%
+  );
+}
+
+/* Row scroll */
+.row-scroll {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  gap: 12px;
+  padding-bottom: 8px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.row-scroll::-webkit-scrollbar {
+  display: none;
+}
+.row-scroll > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* Badge */
+.badge-hindi {
+  background: linear-gradient(135deg, #ff6b35, #f7c59f);
+  color: #1a0a00;
+  font-weight: 700;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.badge-dubbed {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  font-weight: 600;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Rating star */
+.star-rating {
+  color: var(--sn-gold);
+}
+
+/* Video player container */
+.player-wrapper {
+  position: relative;
+  padding-top: 56.25%;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.player-wrapper iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Ad slots */
+.ad-slot {
+  background: var(--sn-card);
+  border: 1px dashed var(--sn-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sn-muted);
+  font-size: 12px;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(20, 20, 30, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #ff6b35, #f7c59f, #e50914);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Pulse animation */
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(229, 9, 20, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(229, 9, 20, 0); }
+}
+.pulse-red {
+  animation: pulse-red 2s infinite;
+}
+
+/* Bottom nav active */
+.bottom-nav-item.active {
+  color: var(--sn-red);
+}
+
+/* Page transitions */
+.page-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
