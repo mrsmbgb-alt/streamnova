@@ -2,57 +2,55 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Film, Tv, Star, Bookmark, Search } from "lucide-react";
-import { useAppStore } from "@/lib/store";
-import { useLanguage } from "@/hooks/useLanguage";
+import { PlayCircle, Film, Tv, Sparkles, Heart, Search } from "lucide-react";
 
-export default function BottomNav() {
+interface BottomNavProps {
+  onOpenSearch?: () => void;
+}
+
+export default function BottomNav({ onOpenSearch }: BottomNavProps) {
   const pathname = usePathname();
-  const { watchlist } = useAppStore();
-  const { t } = useLanguage();
 
   const navItems = [
-    { href: "/", icon: Home, label: t("home") },
-    { href: "/movies", icon: Film, label: t("movies") },
-    { href: "/search", icon: Search, label: t("search").split(" ")[0] },
-    { href: "/anime", icon: Star, label: t("anime") },
-    { href: "/watchlist", icon: Bookmark, label: t("watchlist").split(" ")[1] || "List" },
+    { label: "Home", href: "/", icon: PlayCircle },
+    { label: "Movies", href: "/movies", icon: Film },
+    { label: "Series", href: "/series", icon: Tv },
+    { label: "K-Drama", href: "/kdrama", icon: Sparkles },
+    { label: "Anime", href: "/anime", icon: Sparkles },
+    { label: "Watchlist", href: "/watchlist", icon: Heart },
   ];
 
-  const isActive = (href: string) => pathname === href;
-
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden glass border-t border-white/10">
-      <div className="flex items-center justify-around px-2 py-2">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-neutral-950/95 backdrop-blur-lg border-t border-neutral-800/80 px-2 py-1.5 shadow-2xl">
+      <div className="flex items-center justify-around">
         {navItems.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item.href);
+          const isActive = pathname === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-all duration-200 relative ${
-                active ? "text-red-500" : "text-gray-400 hover:text-white"
+              className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-lg text-[10px] font-semibold transition-all ${
+                isActive
+                  ? "text-red-500 scale-105 font-bold"
+                  : "text-neutral-400 hover:text-white"
               }`}
             >
-              <div className={`relative ${active ? "scale-110" : ""} transition-transform`}>
-                <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
-                {item.href === "/watchlist" && watchlist.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold">
-                    {watchlist.length > 9 ? "9+" : watchlist.length}
-                  </span>
-                )}
-              </div>
-              <span className={`text-[10px] font-medium ${active ? "text-red-500" : ""}`}>
-                {item.label}
-              </span>
-              {active && (
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-red-500 rounded-full" />
-              )}
+              <item.icon className={`w-5 h-5 ${isActive ? "stroke-[2.5]" : "stroke-[1.8]"}`} />
+              <span>{item.label}</span>
             </Link>
           );
         })}
+
+        {onOpenSearch && (
+          <button
+            onClick={onOpenSearch}
+            className="flex flex-col items-center gap-0.5 py-1 px-2 rounded-lg text-[10px] font-semibold text-neutral-400 hover:text-white transition"
+          >
+            <Search className="w-5 h-5 stroke-[1.8]" />
+            <span>Search</span>
+          </button>
+        )}
       </div>
-    </nav>
+    </div>
   );
 }

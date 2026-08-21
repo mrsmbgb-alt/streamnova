@@ -1,166 +1,235 @@
 "use client";
 
-import { useState } from "react";
-import { RefreshCw, ExternalLink, Volume2, AlertCircle } from "lucide-react";
-import { getEmbedUrl, getAlternateEmbedUrl } from "@/lib/tmdb";
-import { useLanguage } from "@/hooks/useLanguage";
+import { useState, useEffect } from "react";
+import { X, Play, Volume2, Share2, ChevronLeft, ChevronRight, Server, Check, Sparkles, ExternalLink, RefreshCw } from "lucide-react";
+import { TMDBMedia } from "@/lib/tmdb";
+import { saveLocalHistory } from "@/lib/client-storage";
+import { triggerPopUnderAd } from "@/lib/ad-service";
 
 interface VideoPlayerProps {
-  tmdbId: number;
-  mediaType: "movie" | "tv";
-  title: string;
+  media: TMDBMedia | null;
   season?: number;
   episode?: number;
+  onClose: () => void;
+  onSelectNextEpisode?: () => void;
+  onSelectPrevEpisode?: () => void;
+  totalEpisodesInSeason?: number;
 }
 
-type SourceKey = "primary" | "alternate";
-
-const SOURCES: Record<SourceKey, { label: string; description: string }> = {
-  primary: { label: "VidSrc", description: "Primary Source (Hindi Audio)" },
-  alternate: { label: "EmbedSu", description: "Alternate Source (Hindi Dub)" },
-};
-
-export default function VideoPlayer({ tmdbId, mediaType, title, season, episode }: VideoPlayerProps) {
-  const [currentSource, setCurrentSource] = useState<SourceKey>("primary");
+export default function VideoPlayer({
+  media,
+  season = 1,
+  episode = 1,
+  onClose,
+  onSelectNextEpisode,
+  onSelectPrevEpisode,
+  totalEpisodesInSeason = 24,
+}: VideoPlayerProps) {
+  const [streamSources, setStreamSources] = useState<any[]>([]);
+  const [activeServerIndex, setActiveServerIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const { t } = useLanguage();
+  const [audioTrack, setAudioTrack] = useState("Hindi");
+  const [copiedLink, setCopiedLink] = useState(false);
 
-  const getUrl = (source: SourceKey): string => {
-    if (source === "primary") {
-      return getEmbedUrl(tmdbId, mediaType, season, episode);
+  if (!media) return null;
+
+  const isMovie = media.media_type === "movie";
+
+  useEffect(() => {
+    fetchStreams();
+    // Record to history
+    saveLocalHistory({
+      contentId: media.id,
+      mediaType: media.media_type || "movie",
+      title: media.title || "Untitled",
+      posterPath: media.poster_path,
+      season,
+      episode,
+    });
+  }, [media.id, season, episode]);
+
+  const fetchStreams = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `/api/stream?id=${media.id}&imdb_id=${media.imdb_id || ""}&type=${media.media_type || "movie"}&season=${season}&episode=${episode}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setStreamSources(data.sources || []);
+        setActiveServerIndex(0);
+      }
+    } catch (err) {
+      console.error("Stream error:", err);
+    } finally {
+      setLoading(false);
     }
-    return getAlternateEmbedUrl(tmdbId, mediaType, season, episode);
   };
 
-  const handleIframeLoad = () => {
-    setLoading(false);
-    setError(false);
+  const currentStream = streamSources[activeServerIndex] || {
+    url: isMovie
+      ? `https://vidsrc.cc/v2/embed/movie/${media.id}?autoPlay=true&audio=hi`
+      : `https://vidsrc.cc/v2/embed/tv/${media.id}/${season}/${episode}?autoPlay=true&audio=hi`,
+    serverName: "Server 1 - 8Stream Hindi VIP",
   };
 
-  const handleIframeError = () => {
-    setLoading(false);
-    setError(true);
-  };
-
-  const switchSource = (source: SourceKey) => {
-    setCurrentSource(source);
-    setLoading(true);
-    setError(false);
-  };
-
-  const handleRefresh = () => {
-    setLoading(true);
-    setError(false);
-    // Force iframe reload by toggling source
-    const current = currentSource;
-    setCurrentSource("primary");
-    setTimeout(() => setCurrentSource(current), 100);
-  };
-
-  // Pop-under ad on watch now
-  const handlePopunder = () => {
-    const adUrl = "https://www.google.com"; // Replace with actual ad network URL
-    window.open(adUrl, "_blank", "noopener");
+  const handleShare = () => {
+    if (typeof window === "undefined") return;
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
   };
 
   return (
-    <div className="w-full">
-      {/* Player Controls Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2">
-          <Volume2 size={16} className="text-red-400" />
-          <span className="text-white font-semibold text-sm">{t("hindiAudio")}</span>
-          <span className="text-gray-500 text-sm">•</span>
-          <span className="text-gray-400 text-xs">{title}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Source switcher */}
-          {(Object.keys(SOURCES) as SourceKey[]).map((src) => (
-            <button
-              key={src}
-              onClick={() => switchSource(src)}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                currentSource === src
-                  ? "bg-red-600 text-white"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-              }`}
-            >
-              {SOURCES[src].label}
-            </button>
-          ))}
-
+    <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl flex flex-col justify-between overflow-y-auto">
+      {/* Top Controls Bar */}
+      <div className="flex items-center justify-between px-4 sm:px-8 py-3 bg-neutral-950/90 border-b border-neutral-800">
+        <div className="flex items-center gap-3">
           <button
-            onClick={handleRefresh}
-            className="p-1.5 bg-gray-700 rounded-lg text-gray-300 hover:text-white hover:bg-gray-600 transition-all"
-            title="Reload player"
+            onClick={onClose}
+            className="p-2 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:border-red-600 transition"
           >
-            <RefreshCw size={14} />
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+              {media.title}
+              {!isMovie && (
+                <span className="text-xs font-semibold text-red-400 bg-red-950 px-2 py-0.5 rounded border border-red-800">
+                  S{season} E{episode}
+                </span>
+              )}
+            </h3>
+            <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1">
+              <Sparkles className="w-2.5 h-2.5 text-amber-400" /> Hindi Audio Default
+            </span>
+          </div>
+        </div>
+
+        {/* Action Controls */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleShare}
+            className="px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition"
+          >
+            <Share2 className="w-3.5 h-3.5 text-red-400" />
+            <span>{copiedLink ? "Link Copied!" : "Share"}</span>
           </button>
 
-          <a
-            href={getUrl(currentSource)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1.5 bg-gray-700 rounded-lg text-gray-300 hover:text-white hover:bg-gray-600 transition-all"
-            title="Open in new tab"
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white transition"
           >
-            <ExternalLink size={14} />
-          </a>
+            <X className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
-      {/* Player */}
-      <div className="player-wrapper rounded-xl overflow-hidden shadow-2xl">
-        {loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-10">
-            <div className="w-12 h-12 border-4 border-red-500/30 border-t-red-500 rounded-full animate-spin mb-4" />
-            <p className="text-gray-400 text-sm">{t("loading")}</p>
-            <p className="text-gray-600 text-xs mt-1">{SOURCES[currentSource].description}</p>
+      {/* Main Video Frame */}
+      <div className="relative w-full max-w-6xl mx-auto my-auto p-2 sm:p-4 aspect-video bg-neutral-950 rounded-2xl overflow-hidden shadow-2xl border border-neutral-800">
+        {loading ? (
+          <div className="w-full h-full flex flex-col items-center justify-center space-y-4 bg-neutral-950 text-white">
+            <RefreshCw className="w-8 h-8 text-red-500 animate-spin" />
+            <p className="text-sm font-semibold text-neutral-300">Connecting to 8StreamApi Hindi Server...</p>
           </div>
+        ) : (
+          <iframe
+            src={currentStream.url}
+            title={`Streaming ${media.title}`}
+            className="w-full h-full border-0 rounded-xl"
+            allowFullScreen
+            allow="autoplay; encrypted-media; picture-in-picture"
+          />
         )}
-
-        {error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-10 p-6">
-            <AlertCircle size={40} className="text-red-400 mb-3" />
-            <p className="text-white font-semibold mb-2">{t("errorMsg")}</p>
-            <p className="text-gray-400 text-sm text-center mb-4">{t("serverBusy")}</p>
-            <div className="flex gap-3">
-              <button
-                onClick={handleRefresh}
-                className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700"
-              >
-                <RefreshCw size={14} />
-                Try Again
-              </button>
-              {currentSource === "primary" && (
-                <button
-                  onClick={() => switchSource("alternate")}
-                  className="flex items-center gap-2 bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-600"
-                >
-                  Switch Source
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        <iframe
-          key={`${currentSource}-${tmdbId}-${season}-${episode}`}
-          src={getUrl(currentSource)}
-          allowFullScreen
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          onLoad={handleIframeLoad}
-          onError={handleIframeError}
-          className="absolute inset-0 w-full h-full border-0"
-          title={`${title} - Hindi Audio`}
-        />
       </div>
 
-      {/* Source info */}
-      <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
-        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-        <span>Streaming from {SOURCES[currentSource].description}</span>
+      {/* Bottom Streaming Controls & Server Switcher */}
+      <div className="px-4 sm:px-8 py-4 bg-neutral-950 border-t border-neutral-900 space-y-3 max-w-6xl mx-auto w-full">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          {/* Audio Track Switcher */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-neutral-400 flex items-center gap-1">
+              <Volume2 className="w-4 h-4 text-red-500" /> Audio Track:
+            </span>
+            <div className="flex items-center gap-1 bg-neutral-900 p-1 rounded-xl border border-neutral-800">
+              {["Hindi (Primary)", "Hindi Dual Audio", "Original"].map((lang) => (
+                <button
+                  key={lang}
+                  onClick={() => {
+                    setAudioTrack(lang);
+                    triggerPopUnderAd();
+                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                    audioTrack === lang
+                      ? "bg-red-600 text-white shadow-md shadow-red-900/50"
+                      : "text-neutral-400 hover:text-white"
+                  }`}
+                >
+                  {lang}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Episode Controls for TV / Anime / K-Drama */}
+          {!isMovie && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onSelectPrevEpisode}
+                disabled={episode <= 1}
+                className="px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white disabled:opacity-40 text-xs font-bold flex items-center gap-1 transition"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Prev Episode</span>
+              </button>
+
+              <span className="text-xs font-bold text-neutral-300 bg-neutral-900 px-3 py-1.5 rounded-xl border border-neutral-800">
+                Ep {episode}
+              </span>
+
+              <button
+                onClick={onSelectNextEpisode}
+                disabled={episode >= totalEpisodesInSeason}
+                className="px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white disabled:opacity-40 text-xs font-bold flex items-center gap-1 transition"
+              >
+                <span>Next Episode</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Server Selector Buttons */}
+        <div className="pt-2 border-t border-neutral-900">
+          <div className="flex items-center gap-2 mb-2">
+            <Server className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-bold text-neutral-300">Select Stream Server (If stream buffers, switch server):</span>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {streamSources.map((srv, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  setActiveServerIndex(idx);
+                  triggerPopUnderAd();
+                }}
+                className={`px-3 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition ${
+                  activeServerIndex === idx
+                    ? "bg-gradient-to-r from-red-600 to-amber-600 border-red-500 text-white shadow-lg shadow-red-950"
+                    : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-700"
+                }`}
+              >
+                {activeServerIndex === idx && <Check className="w-3.5 h-3.5" />}
+                <span>{srv.serverName}</span>
+                <span className="text-[10px] bg-black/40 px-1 py-0.5 rounded text-amber-300">
+                  {srv.quality || "HD"}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

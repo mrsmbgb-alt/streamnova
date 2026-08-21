@@ -1,294 +1,105 @@
-# StreamNova 🎬
+# 🎬 StreamNova - Cloud-Native Hindi Audio Streaming Website
 
-> একটি পূর্ণাঙ্গ Netflix-স্টাইলের হিন্দি অডিও স্ট্রিমিং প্ল্যাটফর্ম
-
-**StreamNova** is a full-stack Hindi audio streaming platform built with Next.js 15, featuring Bollywood movies, Hindi dubbed anime, Korean dramas, and TV series.
+StreamNova is a 100% FREE, cloud-native streaming web platform where users can watch Movies, TV Series, Korean Dramas, and Anime—all with primary Hindi audio. Built using Next.js 14 App Router, Tailwind CSS, TMDB API, 8StreamApi, Moviebox API, and PostgreSQL/Upstash Redis.
 
 ---
 
-## 🚀 Features
+## 🌟 Key Features
 
-- 🎵 **Hindi Audio Default** — All content defaults to Hindi audio/dubbed versions
-- 🎬 **4 Content Categories** — Movies, TV Series, K-Drama, Anime
-- 🔍 **Smart Search** — Search across all content types
-- ❤️ **Watchlist** — Save content to watch later (localStorage)
-- 🌙 **Dark Netflix-style UI** — Smooth animations and skeleton loading
-- 📱 **Mobile-First** — Bottom navigation + responsive design
-- 🌐 **i18n** — English & Hindi UI language support
-- 💰 **Ad Slots** — Pre-configured header, inline, and footer ad slots
-- ⚡ **Fast Loading** — ISR caching, React Query client-side cache
-- 🎭 **Genre Filtering** — Filter content by Action, Comedy, Drama, etc.
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 15 (App Router) |
-| Styling | Tailwind CSS v4 |
-| State | Zustand (persisted) |
-| Data Fetching | TanStack React Query + Axios |
-| Database | PostgreSQL + Drizzle ORM |
-| Content API | TMDB (The Movie Database) |
-| Video Embed | VidSrc.to + Embed.su |
+- **Hindi Audio Default**: Every movie, series, K-drama, and anime prioritizes Hindi dual audio streams.
+- **API Stack Integration**:
+  - **TMDB API**: High-speed metadata, posters, cast, trailers, and IMDb IDs (`tt1877830`).
+  - **8StreamApi (Primary)**: Fetches stream links using IMDb ID.
+  - **Moviebox & LK21 APIs (Backup)**: Direct fallback streaming sources.
+  - **Multi-Server Player**: 4 streaming servers with Hindi dub audio selection & episode switcher.
+- **Dark Theme (Netflix-Style UI)**: Responsive design from mobile 320px to 4K displays.
+- **Watchlist & History**: Save favorites and track watch progress ("Continue Watching").
+- **Ad Network Ready**: Top Header (728x90), Middle In-Feed, Footer, and Pop-Under on "Watch Now" interaction.
+- **Cloud-Native**: Zero recurring costs; ready for Cloudflare Pages & Vercel deployment.
 
 ---
 
-## 📦 Setup & Installation
+## 🚀 Step-by-Step Deployment Guide
 
-### 1. Clone & Install
+### Step 1: Clone Repository
 
 ```bash
-git clone https://github.com/your-username/streamnova.git
+git clone https://github.com/yourusername/streamnova.git
 cd streamnova
 npm install
 ```
 
-### 2. Get TMDB API Key (Free)
+### Step 2: Deploy 8StreamApi (Primary Streaming Service)
 
-1. Go to [themoviedb.org](https://www.themoviedb.org/)
-2. Create a free account
-3. Go to **Settings → API → Create (Developer)**
-4. Copy your **API Key (v3 auth)**
+1. Fork the 8StreamApi repository: [https://github.com/himanshu8443/8StreamApi](https://github.com/himanshu8443/8StreamApi)
+2. Deploy to Vercel as a Serverless Function.
+3. Copy your deployed Vercel URL (e.g., `https://8streamapi.vercel.app`).
 
-### 3. Configure Environment
+### Step 3: Deploy Main App on Cloudflare Pages
 
-```bash
-cp .env.example .env
-```
+1. Push your code to GitHub.
+2. Go to **Cloudflare Pages** dashboard -> **Create a project** -> **Connect Git**.
+3. Configure Build Settings:
+   - **Framework Preset**: `Next.js`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `.next`
+4. Add Environment Variables:
+   ```env
+   NEXT_PUBLIC_TMDB_API_KEY=your_tmdb_key
+   NEXT_PUBLIC_8STREAM_API_URL=https://your-8stream-api.vercel.app
+   NEXT_PUBLIC_BACKUP_API_URL=https://moviebox-api.vercel.app
+   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/app_db
+   ```
+5. Click **Save and Deploy**.
 
-Edit `.env`:
-```env
-DATABASE_URL=postgresql://user:password@localhost:5432/streamnova_db
-TMDB_API_KEY=your_tmdb_api_key_here
-```
+### Step 4: Backup Deployment on Vercel
 
-### 4. Database Setup
-
-```bash
-npx drizzle-kit push
-```
-
-### 5. Run Development Server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000)
-
----
-
-## ☁️ Cloudflare Pages Deployment
-
-### Prerequisites
-- Cloudflare account
-- GitHub repo with your code
-- PostgreSQL database (e.g., Neon, Supabase, or Cloudflare D1)
-
-### Step 1: Connect Repository
-
-1. Log in to [Cloudflare Dashboard](https://dash.cloudflare.com)
-2. Go to **Workers & Pages → Create application → Pages**
-3. Connect your GitHub repository
-
-### Step 2: Build Configuration
-
-| Setting | Value |
-|---------|-------|
-| Framework | Next.js |
-| Build command | `npm run build` |
-| Build output | `.next` |
-| Node.js version | 18 or 20 |
-
-### Step 3: Environment Variables
-
-Add in Cloudflare Pages **Settings → Environment variables**:
-
-```
-DATABASE_URL = your_production_postgres_url
-TMDB_API_KEY = your_tmdb_api_key
-```
-
-### Step 4: Enable Cloudflare CDN Caching
-
-Add `_headers` file to `public/` directory:
-```
-/api/tmdb/*
-  Cache-Control: public, max-age=3600, s-maxage=3600
-/_next/static/*
-  Cache-Control: public, max-age=31536000, immutable
-/images/*
-  Cache-Control: public, max-age=86400
-```
-
-### Step 5: Deploy
-
-```bash
-git push origin main
-# Cloudflare auto-deploys on push
-```
-
----
-
-## 🔀 Vercel Backup Deployment
-
-If Cloudflare has issues, deploy to Vercel instantly:
-
-### Quick Deploy
-```bash
-npm install -g vercel
-vercel --prod
-```
-
-### Or via Dashboard
-1. Go to [vercel.com](https://vercel.com)
-2. Import your GitHub repository
-3. Add environment variables (same as Cloudflare)
-4. Deploy!
-
-> ✅ **Zero config change needed** — Same `.env` variables work on both platforms.
-
----
-
-## 📺 Video Streaming
-
-StreamNova uses free embed sources for video streaming:
-
-| Source | URL Pattern | Notes |
-|--------|------------|-------|
-| VidSrc (Primary) | `vidsrc.to/embed/movie/{tmdb_id}` | Hindi audio available |
-| EmbedSu (Backup) | `embed.su/embed/movie/{tmdb_id}` | Hindi dub fallback |
-
-### Hindi Audio Logic
-```
-1. Content with original_language=hi → Native Hindi ✓
-2. Content from KO/JA/EN → Hindi Dubbed via embed sources ✓
-3. Player auto-detects Hindi audio track
-4. User can switch tracks in player if multiple available
-```
-
----
-
-## 💰 Ad Integration
-
-Pre-configured ad slots are ready. Replace with your ad network code:
-
-### AdSense / Ad Network Setup
-
-Edit `src/components/AdSlot.tsx`:
-```tsx
-// Replace the ad-slot div content with your ad network script
-<div className={`ad-slot ${adSizes[position]}`}>
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" />
-  <ins className="adsbygoogle"
-    data-ad-client="ca-pub-YOUR_ID"
-    data-ad-slot="YOUR_SLOT" />
-</div>
-```
-
-### Pop-under Ad
-
-Edit `src/components/AdSlot.tsx`:
-```typescript
-export function triggerPopunder(adUrl = "https://your-ad-network.com/popunder") {
-  const w = window.open("", "_blank", "noopener,noreferrer");
-  if (w) w.location.href = adUrl;
-}
-```
-
-Pop-under triggers automatically when user clicks **"Watch Now"**.
-
----
-
-## 🗂️ Project Structure
-
-```
-src/
-├── app/
-│   ├── api/
-│   │   └── tmdb/          # TMDB API proxy routes
-│   ├── movie/[id]/        # Movie detail page
-│   ├── tv/[id]/           # TV show detail page
-│   ├── anime/[id]/        # Anime detail page
-│   ├── korean/[id]/       # K-Drama detail page
-│   ├── movies/            # Movies category page
-│   ├── tv/                # TV series category page
-│   ├── anime/             # Anime category page
-│   ├── korean/            # K-Drama category page
-│   ├── search/            # Search page
-│   ├── watchlist/         # User watchlist
-│   └── settings/          # App settings (language, etc.)
-├── components/
-│   ├── Navbar.tsx         # Top navigation
-│   ├── BottomNav.tsx      # Mobile bottom nav
-│   ├── HeroBanner.tsx     # Featured content hero
-│   ├── ContentCard.tsx    # Movie/show card
-│   ├── ContentRow.tsx     # Horizontal scrollable row
-│   ├── VideoPlayer.tsx    # Embedded video player
-│   ├── GenreFilter.tsx    # Genre filter buttons
-│   ├── AdSlot.tsx         # Ad placement components
-│   └── SkeletonCard.tsx   # Loading skeletons
-├── lib/
-│   ├── tmdb.ts            # TMDB API functions
-│   ├── store.ts           # Zustand state management
-│   └── i18n.ts            # Translations (EN/HI)
-├── hooks/
-│   └── useLanguage.ts     # Language hook
-└── db/
-    ├── index.ts           # Database connection
-    └── schema.ts          # Drizzle schema
-```
-
----
-
-## 🌐 API Routes
-
-| Route | Method | Description |
-|-------|--------|-------------|
-| `/api/tmdb/home` | GET | Home page data (ISR cached 1h) |
-| `/api/tmdb/movie/[id]` | GET | Movie details |
-| `/api/tmdb/tv/[id]` | GET | TV show details |
-| `/api/tmdb/search?q=` | GET | Search content |
-| `/api/tmdb/category?cat=&page=` | GET | Category listing |
-| `/api/health` | GET | Health check |
+1. Import the same GitHub repository on Vercel.
+2. Add the environment variables above.
+3. Click **Deploy**.
 
 ---
 
 ## 🔑 Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DATABASE_URL` | ✅ | PostgreSQL connection string |
-| `TMDB_API_KEY` | ✅ | TMDB API key (free at themoviedb.org) |
+Create `.env.local` for environment variables:
+
+```env
+# TMDB API Key (Free)
+NEXT_PUBLIC_TMDB_API_KEY=8415443a5716e25442a9d80d2a84fb83
+
+# Primary & Backup Streaming APIs
+NEXT_PUBLIC_8STREAM_API_URL=https://8stream-api.vercel.app
+NEXT_PUBLIC_BACKUP_API_URL=https://moviebox-api.vercel.app
+
+# PostgreSQL Database URL
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/app_db
+```
 
 ---
 
-## 📱 Mobile Features
+## 🛠️ Data Flow Architecture
 
-- Bottom navigation bar (Home, Movies, Search, Anime, Watchlist)
-- Touch-friendly card hover effects
-- Responsive grid layouts (2 → 6 columns)
-- Horizontal scrollable content rows
-- Mobile-optimized hero banner
+```
+User Request → TMDB API (Fetch metadata + IMDb ID)
+            → 8StreamApi (Fetch .m3u8 / embed using IMDb ID)
+            → Fallback to Moviebox / VidLink / LK21 if primary is down
+            → Filter Hindi audio streams
+            → Render Video Player
+```
 
 ---
 
-## ⚡ Performance
+## ⚡ Technical Stack
 
-- **ISR** — API routes cached for 1 hour
-- **React Query** — Client-side cache (5 min stale, 30 min gc)
-- **Image optimization** — Next.js `<Image>` with TMDB CDN
-- **Code splitting** — Automatic with Next.js App Router
-- **Skeleton loading** — Netflix-style loading states
+- **Framework**: Next.js 16 (App Router)
+- **Database / ORM**: PostgreSQL + Drizzle ORM
+- **Styling**: Tailwind CSS + Lucide Icons
+- **Icons**: Lucide React
+- **Streaming Engine**: 8StreamApi, Moviebox, VidLink, AutoEmbed, SuperEmbed
 
 ---
 
 ## 📄 License
 
-MIT License — Free to use and modify.
-
----
-
-*Made with ❤️ for Hindi content lovers*
+MIT License. Free for open-source and personal streaming websites.

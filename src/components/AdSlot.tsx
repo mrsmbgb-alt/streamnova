@@ -1,47 +1,58 @@
 "use client";
 
+import { useState } from "react";
+import { X, ExternalLink, Sparkles } from "lucide-react";
+
 interface AdSlotProps {
-  position: "header" | "footer" | "inline" | "sidebar";
+  type: "header" | "middle" | "footer";
   className?: string;
 }
 
-const adSizes = {
-  header: "w-full max-w-[728px] h-[90px]",
-  footer: "w-full max-w-[728px] h-[60px]",
-  inline: "w-full max-w-[300px] sm:max-w-[728px] h-[90px] sm:h-[90px]",
-  sidebar: "w-[160px] h-[600px]",
-};
+export default function AdSlot({ type, className = "" }: AdSlotProps) {
+  const [closed, setClosed] = useState(false);
 
-const adLabels = {
-  header: "728×90 Banner Advertisement",
-  footer: "728×60 Footer Ad",
-  inline: "In-Content Advertisement",
-  sidebar: "160×600 Skyscraper Ad",
-};
+  if (closed) return null;
 
-export default function AdSlot({ position, className = "" }: AdSlotProps) {
   return (
     <div
-      className={`ad-slot mx-auto ${adSizes[position]} ${className}`}
-      data-ad-position={position}
+      className={`relative w-full overflow-hidden rounded-xl border border-red-900/40 bg-gradient-to-r from-neutral-900 via-neutral-950 to-neutral-900 p-3 shadow-lg my-4 text-center transition-all ${className}`}
     >
-      <div className="flex flex-col items-center justify-center h-full gap-1">
-        <span className="text-gray-600 text-[10px] uppercase tracking-wider font-medium">
-          Advertisement
+      <div className="flex items-center justify-between pb-1 border-b border-neutral-800 text-xs text-neutral-400">
+        <span className="flex items-center gap-1 font-semibold tracking-wide text-red-400">
+          <Sparkles className="w-3 h-3 text-red-500" /> Sponsored Advertisement
         </span>
-        <span className="text-gray-700 text-[11px]">{adLabels[position]}</span>
-        <span className="text-gray-800 text-[9px]">
-          Place your ad network script here
-        </span>
+        <button
+          onClick={() => setClosed(true)}
+          className="p-1 hover:text-white hover:bg-neutral-800 rounded transition-colors"
+          title="Hide Ad"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
       </div>
+
+      <div className="mt-2 flex flex-col md:flex-row items-center justify-between gap-3 px-2 py-1">
+        <div className="text-left">
+          <h4 className="text-sm font-bold text-white flex items-center gap-2">
+            🎬 StreamNova Premium Pass <span className="text-[10px] bg-red-600 text-white font-bold px-1.5 py-0.5 rounded">FREE</span>
+          </h4>
+          <p className="text-xs text-neutral-400">
+            Enjoy 100% Free Unlimited Movies, Anime & K-Dramas with High-Speed Dual Audio Streams.
+          </p>
+        </div>
+
+        <a
+          href="https://www.google.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-semibold text-xs px-4 py-2 rounded-lg transition shadow-md shadow-red-900/30"
+        >
+          <span>Explore Partner Offer</span>
+          <ExternalLink className="w-3.5 h-3.5" />
+        </a>
+      </div>
+
+      {/* Embedded Script Anchor for Adsterra/PropellerAds/PopCash */}
+      <div id={`ad-${type}`} className="ad-container hidden" />
     </div>
   );
-}
-
-// Pop-under ad trigger
-export function triggerPopunder(adUrl = "https://your-ad-network.com/popunder") {
-  const w = window.open("", "_blank", "noopener,noreferrer");
-  if (w) {
-    w.location.href = adUrl;
-  }
 }

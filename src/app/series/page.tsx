@@ -13,10 +13,10 @@ import FilterDrawer from "@/components/FilterDrawer";
 import AdSlot from "@/components/AdSlot";
 import { TMDBMedia } from "@/lib/tmdb";
 import { isLocalWatchlist, saveLocalWatchlist } from "@/lib/client-storage";
-import { Film, Filter, Sparkles, RefreshCw } from "lucide-react";
+import { Tv, Filter } from "lucide-react";
 
-export default function MoviesPage() {
-  const [movies, setMovies] = useState<TMDBMedia[]>([]);
+export default function SeriesPage() {
+  const [seriesList, setSeriesList] = useState<TMDBMedia[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -36,14 +36,14 @@ export default function MoviesPage() {
   const [watchlistIds, setWatchlistIds] = useState<string[]>([]);
 
   useEffect(() => {
-    fetchMovies(1);
+    fetchSeries(1);
   }, [selectedGenre, selectedYear, selectedRating, hindiOnly]);
 
-  const fetchMovies = async (pageNum: number) => {
+  const fetchSeries = async (pageNum: number) => {
     setLoading(true);
     try {
       const queryParams = new URLSearchParams({
-        type: "movie",
+        type: "tv",
         page: String(pageNum),
         ...(selectedGenre && { genre: selectedGenre }),
         ...(selectedYear && { year: selectedYear }),
@@ -53,12 +53,12 @@ export default function MoviesPage() {
       const res = await fetch(`/api/tmdb/category?${queryParams.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        setMovies(data.results || []);
+        setSeriesList(data.results || []);
         setPage(data.page || 1);
         setTotalPages(data.total_pages || 1);
       }
     } catch (err) {
-      console.error("Error loading movies:", err);
+      console.error("Error loading TV series:", err);
     } finally {
       setLoading(false);
     }
@@ -82,15 +82,14 @@ export default function MoviesPage() {
       />
 
       <main className="flex-1 pt-24 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-6">
-        {/* Banner Title */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-800 pb-6">
           <div>
             <h1 className="text-3xl sm:text-4xl font-black text-white flex items-center gap-2">
-              <Film className="w-8 h-8 text-red-500" />
-              <span>Hindi Dubbed Movies</span>
+              <Tv className="w-8 h-8 text-red-500" />
+              <span>Popular TV Series (Hindi)</span>
             </h1>
             <p className="text-xs sm:text-sm text-neutral-400 mt-1">
-              Watch latest Hollywood & Bollywood blockbuster movies with crystal-clear Hindi audio.
+              Binge top web series, HBO, Netflix & Amazon originals with full Hindi dubbing and episode navigation.
             </p>
           </div>
 
@@ -99,45 +98,42 @@ export default function MoviesPage() {
             className="self-start md:self-auto px-4 py-2 bg-neutral-900 border border-neutral-800 hover:border-red-600 rounded-xl text-xs font-bold text-neutral-300 hover:text-white flex items-center gap-2 transition"
           >
             <Filter className="w-4 h-4 text-red-500" />
-            <span>Filter Movies</span>
+            <span>Filter Series</span>
           </button>
         </div>
 
         <AdSlot type="header" />
 
-        {/* Movies Grid */}
         {loading ? (
           <SkeletonRow count={12} />
-        ) : movies.length > 0 ? (
+        ) : seriesList.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {movies.map((movie) => (
+            {seriesList.map((show) => (
               <MediaCard
-                key={movie.id}
-                media={movie}
+                key={show.id}
+                media={show}
                 onSelect={(m) => {
                   setSelectedMedia(m);
                   setIsDetailOpen(true);
                 }}
                 onPlay={(m) => {
-                  setPlayMedia({ media: m });
+                  setPlayMedia({ media: m, season: 1, episode: 1 });
                 }}
-                isInWatchlist={watchlistIds.includes(String(movie.id)) || isLocalWatchlist(movie.id)}
+                isInWatchlist={watchlistIds.includes(String(show.id)) || isLocalWatchlist(show.id)}
                 onToggleWatchlist={handleToggleWatchlist}
               />
             ))}
           </div>
         ) : (
           <div className="text-center py-20 text-neutral-400 space-y-3">
-            <p className="text-lg font-bold text-white">No movies found matching selected filters.</p>
-            <p className="text-xs text-neutral-500">Try adjusting your genre, year, or rating filters.</p>
+            <p className="text-lg font-bold text-white">No TV series found matching selected filters.</p>
           </div>
         )}
 
-        {/* Pagination Controls */}
         {!loading && totalPages > 1 && (
           <div className="flex items-center justify-center gap-3 pt-8">
             <button
-              onClick={() => fetchMovies(page - 1)}
+              onClick={() => fetchSeries(page - 1)}
               disabled={page <= 1}
               className="px-4 py-2 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-bold text-neutral-300 hover:text-white disabled:opacity-40 transition"
             >
@@ -147,7 +143,7 @@ export default function MoviesPage() {
               Page {page} of {totalPages}
             </span>
             <button
-              onClick={() => fetchMovies(page + 1)}
+              onClick={() => fetchSeries(page + 1)}
               disabled={page >= totalPages}
               className="px-4 py-2 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-bold text-neutral-300 hover:text-white disabled:opacity-40 transition"
             >
@@ -157,7 +153,6 @@ export default function MoviesPage() {
         )}
       </main>
 
-      {/* Modals & Video Player */}
       <ContentModal
         media={selectedMedia}
         isOpen={isDetailOpen}
@@ -177,6 +172,16 @@ export default function MoviesPage() {
           season={playingMedia.season}
           episode={playingMedia.episode}
           onClose={() => setPlayMedia(null)}
+          onSelectNextEpisode={() =>
+            setPlayMedia((prev) =>
+              prev ? { ...prev, episode: (prev.episode || 1) + 1 } : null
+            )
+          }
+          onSelectPrevEpisode={() =>
+            setPlayMedia((prev) =>
+              prev ? { ...prev, episode: Math.max(1, (prev.episode || 1) - 1) } : null
+            )
+          }
         />
       )}
 
@@ -193,7 +198,7 @@ export default function MoviesPage() {
       <FilterDrawer
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
-        selectedCategory="movie"
+        selectedCategory="tv"
         setSelectedCategory={() => {}}
         selectedGenre={selectedGenre}
         setSelectedGenre={setSelectedGenre}
@@ -201,12 +206,12 @@ export default function MoviesPage() {
         setSelectedYear={setSelectedYear}
         selectedRating={selectedRating}
         setSelectedRating={setSelectedRating}
-        onApplyFilters={() => fetchMovies(1)}
+        onApplyFilters={() => fetchSeries(1)}
         onResetFilters={() => {
           setSelectedGenre("");
           setSelectedYear("");
           setSelectedRating("");
-          fetchMovies(1);
+          fetchSeries(1);
         }}
       />
 
